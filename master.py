@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import time
 
 
 def write_to_excel(filepath, df):
@@ -39,21 +38,20 @@ def format_org_names(series):
 
 
 def find_duplicate_excel_values(old_excel_filepath, new_excel_filepath, rows, column):
-    start_time = time.time()
     df = pd.read_excel(old_excel_filepath+'.xlsx', skiprows=rows, index_col=None)
-    org_df = df[column]
-    df["modified_org"] = format_org_names(org_df)
+    df["modified_org"] = df[column]
     org_count = df["modified_org"].value_counts()
     df["count"] = df["modified_org"].map(org_count)
-    # Filter values greater than one to find duplicates in the excel worksheet.
+   
     df_filtered = df[df["count"] > 1]
+    
+    if len(df_filtered.index > 0):
+        df_filtered = df_filtered.sort_values(by=["modified_org"], ascending=False)
    
-    df_filtered = df_filtered.sort_values(by=["modified_org"], ascending=False)
-   
-    df_filtered = df_filtered.loc[:, ~df_filtered.columns.str.contains('^Unnamed')]
+        df_filtered = df_filtered.loc[:, ~df_filtered.columns.str.contains('^Unnamed')]
 
-    write_to_excel(new_excel_filepath, df_filtered)
+        write_to_excel(new_excel_filepath, df_filtered)
 
-    delete_and_save_column(new_excel_filepath, "modified_org")
-
-    print("--- %s seconds ---" % (time.time() - start_time))
+        delete_and_save_column(new_excel_filepath, "modified_org")
+    else:
+        print("No occurences in the excel file!")
